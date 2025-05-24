@@ -1,0 +1,2 @@
+# FreddyBOT
+Website for FreddyBOT
