@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/freddy_circular.ico">
+    <link rel="apple-touch-icon" href="images/freddy_circular.jpg">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="article.css">
+    <title>Article - Freddy Labs</title>
+</head>
+
+<body>
+    <div class="title-container">
+        <h1 id="title" onclick="window.location.href='index.html'">Freddy Labs</h1>
+        <p id="secret-message">Freddy is the best dog!!</p>
+    </div>
+    
+    <div class="article-container">
+        <a href="index.html" class="back-button">← Back to Home</a>
+        
+        <div class="article-header">
+            <h2 class="article-title" id="article-title">Article Title</h2>
+            <div class="article-meta" id="article-meta">Loading...</div>
+        </div>
+        
+        <img src="" alt="Article Image" class="article-image" id="article-image" style="display: none;">
+        
+        <div class="article-content" id="article-content">
+            <p>Loading article content...</p>
+        </div>
+    </div>
+    
+    <div id="footer">
+        <p>Email me: <a href="mailto:jackm@slocum.io">jackm@slocum.io</a> || <a href="mailto:freddy@freddylabs.com">freddy@freddylabs.com</a></p>
+    </div>
+    
+    <script src="jaack-query.js"></script>
+    <script>
+        // Article data
+        const articles = {
+            'modeling-start-motor-attachment': {
+                title: 'Modeling start - motor attachment',
+                image: 'images/first.png',
+                date: 'December 2024',
+                content: `
+                    <p>This is the start! I added motor attachments to the main body...</p>
+                    
+                    <p>I'm making a robot that does things for you like fold clothes, pick up things off your floor, and do the laundry.</p>
+                    
+                    <p>It'll probobly cost ~$100 - $150, but it really depends on if I'll need to add more expensive parts.</p>
+
+                    <p>At first, there will be a bunch of little modeling updates like this one, and then you'll get a bunch of software updates, as I implement the software.</p>
+                `
+            }
+        };
+        
+        // Get article ID from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const articleId = urlParams.get('id') || 'modeling-start-motor-attachment';
+        
+        // Load article content
+        function loadArticle(id) {
+            const article = articles[id];
+            if (article) {
+                document.getElementById('article-title').textContent = article.title;
+                document.getElementById('article-meta').textContent = article.date;
+                document.getElementById('article-content').innerHTML = article.content;
+                document.title = `${article.title} - Freddy Labs`;
+                
+                if (article.image) {
+                    const img = document.getElementById('article-image');
+                    img.src = article.image;
+                    img.alt = article.title;
+                    img.style.display = 'block';
+                }
+            } else {
+                document.getElementById('article-title').textContent = 'Article Not Found';
+                document.getElementById('article-meta').textContent = '';
+                document.getElementById('article-content').innerHTML = '<p>Sorry, the requested article could not be found.</p>';
+            }
+        }
+        
+        // Title hover effect (same as main site)
+        $(document).ready(function () {
+            $('#title').hover(() => {
+                $('#secret-message').stop(true, true).slideDown(300);
+            }, () => {
+                $('#secret-message').stop(true, true).slideUp(300);
+            });
+
+            $('#title').on('touchstart', function (e) {
+                e.preventDefault();
+                const secretMessage = $('#secret-message');
+
+                if (secretMessage.is(':visible')) {
+                    secretMessage.stop(true, true).slideUp(300);
+                } else {
+                    secretMessage.stop(true, true).slideDown(300);
+                }
+            });
+            
+            // Load the article
+            loadArticle(articleId);
+        });
+    </script>
+</body>
+
+</html>
