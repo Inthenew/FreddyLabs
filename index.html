@@ -1,34 +1,38 @@
+<!-- Home Page -->
 <!DOCTYPE html>
 <html>
 
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="shortcut icon" href="/images/freddy_circular.ico">
-  <link rel="apple-touch-icon" href="/images/freddy_circular.jpg">
-  <title>FreddyBOT</title>
-  <style>
-    #_freddyIsTheBestDog_ {
-      position: absolute;
-      transform: translate(-50%, -50%);
-      left: 50%;
-      top: 50%;
-      text-align: center;
-    }
-
-    p {
-      width: fit-content;
-      margin-left: 50%;
-      transform: translate(-55%, -32%);
-      color: rgba(0, 0, 0, .6);
-    }
-  </style>
+  <link rel="shortcut icon" href="images/freddy_circular.ico">
+  <link rel="apple-touch-icon" href="images/freddy_circular.jpg">
+  <link rel="stylesheet" href="styles.css">
+  <title>Freddy Labs</title>
 </head>
 
 <body>
-  <div id="_freddyIsTheBestDog_">
-    <h1>Freddy is the best dog!!</h1>
-    <p>More updates soon</p>
+  <div class="title-container">
+    <h1 id="title">Freddy Labs</h1>
+    <p id="secret-message">Freddy is the best dog!!</p>
   </div>
+  <div class="content-container">
+    <h2 class="content-title">
+      My stuff:
+    </h2>
+    <img src="images/wavy.png" alt="wavy line" class="wavy-divider" />
+    <p class="content-text">Not'in to show (yet)...</p>
+
+    <h2 class="content-title">
+      Updates:
+    </h2>
+    <img src="images/wavy.png" alt="wavy line" class="wavy-divider" />
+    <p class="content-text">Not'in to show (yet)...</p>
+  </div>
+  <div id="footer">
+    <p>Email me: <a href="mailto:jackm@slocum.io">jackm@slocum.io</a> || <a href="mailto:freddy@freddylabs.com">freddy@freddylabs.com</a></p>
+  </div>
+  <script src="jaack-query.js"></script>
+  <script src="nodle.js"></script>
 </body>
 
 </html>
