@@ -93,6 +93,77 @@ async function getLikesFromServer(articleId) {
     }
 }
 
+async function getBatchLikesFromServer(articleIds) {
+    const now = Date.now();
+    const likesCache = getLikesCache();
+    const results = {};
+    const uncachedIds = [];
+    
+    // Check which articles we need to fetch from server
+    for (const articleId of articleIds) {
+        const cached = likesCache[articleId];
+        if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+            results[articleId] = cached.likes;
+            console.log(`Using cached likes for "${articleId}": ${cached.likes}`);
+        } else {
+            uncachedIds.push(articleId);
+        }
+    }
+    
+    // If all articles are cached, return cached results
+    if (uncachedIds.length === 0) {
+        return results;
+    }
+    
+    try {
+        const resp = await fetch(`${API_BASE}?action=batch&articleIds=${uncachedIds.map(id => encodeURIComponent(id)).join(',')}`);
+        
+        if (resp.status === 500) {
+            console.warn(`Server error (500) when fetching batch likes. Using fallback count of 0.`);
+            // Fill uncached articles with 0
+            for (const articleId of uncachedIds) {
+                results[articleId] = 0;
+            }
+            return results;
+        }
+        
+        if (!resp.ok) throw new Error(`Error fetching batch likes: ${resp.status}`);
+        
+        let data;
+        try {
+            data = await resp.json();
+        } catch (jsonError) {
+            console.error('Failed to parse JSON response:', jsonError);
+            // Fill uncached articles with 0
+            for (const articleId of uncachedIds) {
+                results[articleId] = 0;
+            }
+            return results;
+        }
+        
+        const { likes } = data;
+        
+        // Update cache with server data and add to results
+        const updatedCache = getLikesCache();
+        for (const articleId of uncachedIds) {
+            const likesCount = likes[articleId] || 0;
+            results[articleId] = likesCount;
+            updatedCache[articleId] = { likes: likesCount, timestamp: now };
+        }
+        setLikesCache(updatedCache);
+        
+        console.log(`Fetched fresh batch likes for ${uncachedIds.length} articles`);
+        return results;
+    } catch (error) {
+        console.warn(`Failed to fetch batch likes:`, error.message);
+        // Fill uncached articles with 0 as fallback
+        for (const articleId of uncachedIds) {
+            results[articleId] = 0;
+        }
+        return results;
+    }
+}
+
 async function addLikeToServer(articleId) {
     try {
         const resp = await fetch(API_BASE, {
@@ -254,19 +325,45 @@ async function createLikeButton(itemId) {
         handleLike(itemId, this);
     });
     
-    // Load actual count from server in background
-    try {
-        const serverCount = await getLikesFromServer(itemId);
-        if (serverCount !== localData.count) {
-            // Update localStorage with server data
-            saveLikeData(itemId, serverCount, localData.liked);
-            updateLikeButton($button[0], serverCount, localData.liked);
+    return $button;
+}
+
+// Updated function to create like buttons with batch loading
+async function createLikeButtonsForTings(tings) {
+    const likeButtons = {};
+    const articleIds = tings.map(ting => ting.articleId).filter(id => id);
+    
+    if (articleIds.length === 0) return likeButtons;
+    
+    // Create buttons with local data first
+    for (const ting of tings) {
+        if (ting.articleId) {
+            likeButtons[ting.articleId] = await createLikeButton(ting.articleId);
         }
-    } catch (error) {
-        console.error('Failed to load like count from server:', error);
     }
     
-    return $button;
+    // Load likes from server for the specific articles we need
+    try {
+        const serverCounts = await getBatchLikesFromServer(articleIds);
+        
+        // Update buttons with server data if different from local data
+        for (const articleId of articleIds) {
+            const serverCount = serverCounts[articleId] || 0;
+            const localData = getLikeData(articleId);
+            
+            if (serverCount !== localData.count) {
+                // Update localStorage with server data
+                saveLikeData(articleId, serverCount, localData.liked);
+                if (likeButtons[articleId]) {
+                    updateLikeButton(likeButtons[articleId][0], serverCount, localData.liked);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load batch like counts from server:', error);
+    }
+    
+    return likeButtons;
 }
 
 // Actual tings //
@@ -281,6 +378,11 @@ let update_tings = [
         info: "Modeling start - motor attachment",
         img: "images/first.png",
         articleId: "modeling-start-motor-attachment"
+    },
+    {
+        info: "Added arm!!",
+        img: "images/arm.png",
+        articleId: "added-arm"
     }
 ];
 
@@ -299,13 +401,6 @@ function renderTings(tings, containerSelector) {
             </div>
         `);
         
-        // Add like button (async)
-        createLikeButton(itemId).then(likeButton => {
-            tingItem.append(likeButton);
-        }).catch(error => {
-            console.error('Failed to create like button:', error);
-        });
-        
         // Add click functionality for update items
         if (containerSelector === '#updates-container' && ting.articleId) {
             tingItem.css('cursor', 'pointer');
@@ -321,9 +416,55 @@ function renderTings(tings, containerSelector) {
     }
 }
 
+async function renderTingsWithLikes(tings, containerSelector) {
+    const $container = $(containerSelector);
+    $container.empty();
+    
+    // Create all ting items first
+    const tingItems = [];
+    for (const ting of tings) {
+        const title = ting.info || 'Untitled';
+        const itemId = ting.articleId || `item_${Date.now()}_${Math.random()}`;
+        
+        const tingItem = $(`
+            <div class="ting-item" style="background-image: url('${ting.img}');" title="${title}">
+                <div class="ting-title">${title}</div>
+            </div>
+        `);
+        
+        // Add click functionality for update items
+        if (containerSelector === '#updates-container' && ting.articleId) {
+            tingItem.css('cursor', 'pointer');
+            tingItem.on('click', function(e) {
+                // Only navigate if we didn't click the like button
+                if (!$(e.target).closest('.like-button').length) {
+                    window.location.href = `article.html?id=${ting.articleId}`;
+                }
+            });
+        }
+        
+        $container.append(tingItem);
+        tingItems.push({ tingItem, ting });
+    }
+    
+    // Create like buttons in batch
+    try {
+        const likeButtons = await createLikeButtonsForTings(tings);
+        
+        // Add like buttons to their respective ting items
+        for (const { tingItem, ting } of tingItems) {
+            if (ting.articleId && likeButtons[ting.articleId]) {
+                tingItem.append(likeButtons[ting.articleId]);
+            }
+        }
+    } catch (error) {
+        console.error('Failed to create like buttons:', error);
+    }
+}
+
 // Render both sections on document ready
 $(document).ready(function () {
     // Render cards
     renderTings(my_stuff_tings, '#my-stuff-container');
-    renderTings(update_tings, '#updates-container');
+    renderTingsWithLikes(update_tings, '#updates-container');
 });
