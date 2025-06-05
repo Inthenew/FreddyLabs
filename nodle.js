@@ -383,6 +383,11 @@ let update_tings = [
         info: "Added arm!!",
         img: "images/arm.png",
         articleId: "added-arm"
+    },
+    {
+        info: "Modeled Claw!",
+        img: "images/claw.png",
+        articleId: "d"
     }
 ];
 
