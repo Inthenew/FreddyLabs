@@ -393,6 +393,11 @@ let update_tings = [
         info: "Claw Done!!",
         img: "images/claw-real.png",
         articleId: "c"
+    },
+    {
+        info: "Battery + Arduino Uno holders!",
+        img: "images/holders.png",
+        articleId: "b"
     }
 ];
 
