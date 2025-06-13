@@ -398,6 +398,11 @@ let update_tings = [
         info: "Battery + Arduino Uno holders!",
         img: "images/holders.png",
         articleId: "b"
+    },
+    {
+        info: "Phone + VL53L1X holders!",
+        img: "images/phone.png",
+        articleId: "a"
     }
 ];
 
