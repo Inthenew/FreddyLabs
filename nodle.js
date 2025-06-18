@@ -403,6 +403,11 @@ let update_tings = [
         info: "Phone + VL53L1X holders!",
         img: "images/phone.png",
         articleId: "a"
+    },
+    {
+        info: "Hardware done (kinda)",
+        img: "images/hardware.png",
+        articleId: "e"
     }
 ];
 
