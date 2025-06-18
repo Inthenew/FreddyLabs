@@ -491,5 +491,5 @@ async function renderTingsWithLikes(tings, containerSelector) {
 $(document).ready(function () {
     // Render cards
     renderTings(my_stuff_tings, '#my-stuff-container');
-    renderTingsWithLikes(update_tings, '#updates-container');
+    renderTingsWithLikes(update_tings.reverse(), '#updates-container');
 });
