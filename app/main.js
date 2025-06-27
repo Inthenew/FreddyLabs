@@ -14,17 +14,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const video = document.getElementById('camera-view');
     const canvas = document.getElementById('camera-canvas');
     const ctx = canvas.getContext('2d');
+    const serverIpInput = document.getElementById('server-ip');
 
     // --- State ---
     let bleCharacteristic = null;
     let socket = null;
     let countdownInterval = null;
     let stream = null;
-    const SERVER_URL = 'http://192.168.0.9:3000'; // IMPORTANT: Use your actual server URL
     
     const UART_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb'; // Standard BLE UART service
     const UART_CHAR_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';    // Standard BLE UART characteristic
     const TARGET_DEVICE_NAME_KEYWORDS = ['HM', 'Freddy', 'HC', 'BLE']; // Keywords for robot's BLE name
+
+    // --- Helper Functions ---
+    function getServerURL() {
+        let serverInput = serverIpInput.value.trim();
+        
+        // If empty, return null
+        if (!serverInput) {
+            return null;
+        }
+        
+        // Add https:// if no protocol specified
+        if (!serverInput.startsWith('http://') && !serverInput.startsWith('https://')) {
+            serverInput = 'https://' + serverInput;
+        }
+        
+        return serverInput;
+    }
+
+    function validateServerInput() {
+        const serverURL = getServerURL();
+        if (!serverURL) {
+            alert('Please enter a server address.');
+            return false;
+        }
+        return true;
+    }
 
     // --- UI Logic ---
     function showScreen(screenName) {
@@ -34,6 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Bluetooth Logic ---
     connectBleButton.addEventListener('click', async () => {
+        // Validate server input first
+        if (!validateServerInput()) {
+            return;
+        }
+
         try {
             console.log('Requesting Bluetooth device...');
             const device = await navigator.bluetooth.requestDevice({
@@ -50,6 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
             connectBleButton.textContent = 'Connected!';
             connectBleButton.disabled = true;
             setupButton.disabled = false;
+            
+            // Disable server input once connected
+            serverIpInput.disabled = true;
         } catch (error) {
             console.error('Bluetooth connection failed:', error);
             alert('Could not connect to the robot. Please make sure it is on and in range.');
@@ -99,10 +133,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupSocket() {
-        socket = io(SERVER_URL);
+        const serverURL = getServerURL();
+        if (!serverURL) {
+            alert('Invalid server URL');
+            resetToHome();
+            return;
+        }
+
+        console.log('Connecting to server:', serverURL);
+        socket = io(serverURL);
 
         socket.on('connect', () => console.log('Connected to server.'));
         socket.on('disconnect', () => console.log('Disconnected from server.'));
+
+        socket.on('connect_error', (error) => {
+            console.error('Failed to connect to server:', error);
+            alert(`Could not connect to server at ${serverURL}. Please check the address and try again.`);
+            resetToHome();
+        });
 
         socket.on('request-frame', () => {
             const frame = captureFrame();
@@ -159,6 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupButton.disabled = true;
         connectBleButton.disabled = false;
         connectBleButton.textContent = '1. Connect to Robot';
+        serverIpInput.disabled = false;
     }
 
     finishButton.addEventListener('click', resetToHome);
