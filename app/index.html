@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreddyBOT Calibration</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Instructions Screen -->
+        <div id="instructions-screen" class="screen active">
+            <div class="header">
+                <button id="back-button" class="icon-button" style="visibility: hidden;">&larr;</button>
+                <h1>Set Up FreddyBOT</h1>
+                <div class="header-spacer"></div>
+            </div>
+            <div class="content">
+                <p class="instructions-text">
+                    When you press "Set Up", you will have 30 seconds to place your phone on the robot's stand. Make sure the robot is turned on.
+                </p>
+                <button id="connect-ble-button" class="button-primary">1. Connect to Robot</button>
+                <button id="setup-button" class="button-primary" disabled>2. Start Calibration</button>
+            </div>
+        </div>
+
+        <!-- Countdown Screen -->
+        <div id="countdown-screen" class="screen">
+            <div class="content">
+                <p id="countdown-text" class="countdown-text">Calibrating in 30...</p>
+            </div>
+        </div>
+
+        <!-- Calibrating Screen -->
+        <div id="calibrating-screen" class="screen">
+            <video id="camera-view" autoplay playsinline></video>
+            <canvas id="camera-canvas" style="display: none;"></canvas>
+            <div class="camera-overlay">
+                <p class="calibrating-text">Calibrating...</p>
+            </div>
+        </div>
+
+        <!-- Finished Screen -->
+        <div id="finished-screen" class="screen">
+             <div class="header">
+                <button id="finish-back-button" class="icon-button">&larr;</button>
+                <h1>Finished</h1>
+                <div class="header-spacer"></div>
+            </div>
+            <div class="content">
+                <p class="instructions-text">Calibration Complete!</p>
+                <button id="finish-button" class="button-primary">Finish</button>
+            </div>
+        </div>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html> 
