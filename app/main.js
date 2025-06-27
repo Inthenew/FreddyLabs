@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         try {
             const encoder = new TextEncoder();
-            await bleCharacteristic.writeValueWithoutResponse(encoder.encode(cmd));
+            await bleCharacteristic.writeValue(encoder.encode(cmd));
             console.log('Sent BLE command:', cmd);
         } catch (error) {
             console.error('Failed to write BLE command:', error);
