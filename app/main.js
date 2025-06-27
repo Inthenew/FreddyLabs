@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    alert('DOM content loaded. Initializing script.');
-
     // --- DOM Elements ---
     const screens = {
         instructions: document.getElementById('instructions-screen'),
@@ -25,202 +23,187 @@ document.addEventListener('DOMContentLoaded', () => {
     let stream = null;
     
     const UART_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb'; // Standard BLE UART service
-    const UART_CHAR_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';    // Standard BLE UART characteristic
     const TARGET_DEVICE_NAME_KEYWORDS = ['HM', 'Freddy', 'HC', 'BLE']; // Keywords for robot's BLE name
 
     // --- Helper Functions ---
     function getServerURL() {
         let serverInput = serverIpInput.value.trim();
-        alert(`getServerURL called. Raw input: "${serverInput}"`);
         
         if (!serverInput) {
-            alert('Server input is empty.');
             return null;
         }
         
         if (!serverInput.startsWith('http://') && !serverInput.startsWith('https://')) {
-            alert('Protocol not found, adding https://');
             serverInput = 'https://' + serverInput;
         }
         
-        alert(`Formatted server URL: ${serverInput}`);
         return serverInput;
     }
 
     function validateServerInput() {
-        alert('Validating server input...');
         const serverURL = getServerURL();
         if (!serverURL) {
-            alert('Validation failed: Server URL is empty.');
+            alert('Please enter a server address.');
             return false;
         }
-        alert('Validation successful.');
         return true;
     }
 
     // --- UI Logic ---
     function showScreen(screenName) {
-        alert(`Showing screen: ${screenName}`);
         Object.values(screens).forEach(s => s.classList.remove('active'));
         screens[screenName].classList.add('active');
     }
 
     // --- Bluetooth Logic ---
     connectBleButton.addEventListener('click', async () => {
-        alert('Connect to Robot button clicked.');
-        
         if (!validateServerInput()) {
-            alert('Server input validation failed. Aborting connection.');
             return;
         }
 
         try {
-            alert('Requesting Bluetooth device...');
+            console.log('Requesting Bluetooth device...');
             const device = await navigator.bluetooth.requestDevice({
                 filters: TARGET_DEVICE_NAME_KEYWORDS.map(name => ({ namePrefix: name })),
                 optionalServices: [UART_SERVICE_UUID]
             });
-            alert(`Device found: ${device.name}`);
 
-            alert('Connecting to GATT Server...');
+            console.log('Connecting to GATT Server...');
             const server = await device.gatt.connect();
-            alert('GATT Server connected.');
-
-            alert(`Getting primary service: ${UART_SERVICE_UUID}`);
+            
+            console.log('Getting primary service...');
             const service = await server.getPrimaryService(UART_SERVICE_UUID);
-            alert('Primary service obtained.');
             
-            alert(`Getting characteristic: ${UART_CHAR_UUID}`);
-            bleCharacteristic = await service.getCharacteristic(UART_CHAR_UUID);
-            alert('BLE characteristic obtained.');
+            console.log('Getting characteristics...');
+            const characteristics = await service.getCharacteristics();
             
-            alert('Bluetooth connected successfully!');
+            // Find the characteristic that supports write
+            bleCharacteristic = characteristics.find(c => c.properties.write);
+
+            if (!bleCharacteristic) {
+                console.error('No writable characteristic found for the UART service.');
+                alert('Could not find a writable Bluetooth characteristic. The robot may be incompatible.');
+                device.gatt.disconnect();
+                return;
+            }
+            
+            console.log(`Found writable characteristic: ${bleCharacteristic.uuid}`);
+            console.log('Bluetooth connected!');
             connectBleButton.textContent = 'Connected!';
             connectBleButton.disabled = true;
             setupButton.disabled = false;
             serverIpInput.disabled = true;
         } catch (error) {
-            alert(`Bluetooth connection failed: ${error.message}`);
+            console.error('Bluetooth connection failed:', error);
+            alert('Could not connect to the robot. Please make sure it is on and in range.');
         }
     });
 
     async function sendBLECommand(cmd) {
-        alert(`Attempting to send BLE command: ${cmd}`);
         if (!bleCharacteristic) {
-            alert('Cannot send command: BLE characteristic not available.');
+            alert('BLE is not connected. Cannot send command.');
             return;
         }
         try {
-            alert('Encoding command...');
             const encoder = new TextEncoder();
             const data = encoder.encode(cmd);
-            alert('Sending data to device...');
             await bleCharacteristic.writeValue(data);
-            alert(`Successfully sent BLE command: ${cmd}`);
+            console.log('Successfully sent command:', cmd);
         } catch (error) {
-            alert(`Failed to write BLE command: ${error.message}`);
+            let errorMessage = `Failed to send command "${cmd}".`;
+            if (error) {
+                errorMessage += `\nError Name: ${error.name}\nError Message: ${error.message}`;
+            } else {
+                errorMessage += '\nThe error object was null or undefined.';
+            }
+            alert(errorMessage);
+            console.error('Full details of BLE write error:', error);
         }
     }
 
     // --- Camera & Socket.IO Logic ---
     async function startCalibration() {
-        alert('Starting calibration process...');
         try {
-            alert('Requesting camera access (getUserMedia)...');
             stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             video.srcObject = stream;
             await video.play();
-            alert('Camera stream active.');
             
             video.addEventListener('playing', () => {
-                 alert('Video is playing, setting canvas size.');
                  canvas.width = video.videoWidth;
                  canvas.height = video.videoHeight;
             }, { once: true });
 
-            alert('Setting up socket connection...');
             setupSocket();
         } catch (error) {
-            alert(`Camera setup failed: ${error.message}`);
+            console.error('Camera setup failed:', error);
+            alert('Could not access camera. Please grant permission and try again.');
             resetToHome();
         }
     }
 
     function captureFrame() {
-        alert('Capturing frame...');
         if (!video.srcObject) {
-            alert('Cannot capture frame, video stream is not active.');
+            console.warn('Cannot capture frame, video stream is not active.');
             return null;
         }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const frameData = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-        alert('Frame captured and converted to base64.');
-        return frameData;
+        return canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
     }
 
     function setupSocket() {
         const serverURL = getServerURL();
         if (!serverURL) {
-            alert('Cannot setup socket: Invalid server URL.');
             resetToHome();
             return;
         }
 
-        alert(`Connecting to server via Socket.IO: ${serverURL}`);
+        console.log('Connecting to server:', serverURL);
         socket = io(serverURL);
 
-        socket.on('connect', () => alert('Socket.IO: Connected to server.'));
-        socket.on('disconnect', () => alert('Socket.IO: Disconnected from server.'));
+        socket.on('connect', () => console.log('Connected to server.'));
+        socket.on('disconnect', () => console.log('Disconnected from server.'));
 
         socket.on('connect_error', (error) => {
-            alert(`Socket.IO: Connection Error: ${error.message}`);
+            console.error('Failed to connect to server:', error);
+            alert(`Could not connect to server at ${serverURL}. Please check the address and try again.`);
             resetToHome();
         });
 
         socket.on('request-frame', () => {
-            alert('Socket.IO: Received "request-frame" from server.');
             const frame = captureFrame();
             if (frame) {
-                alert('Socket.IO: Emitting "video-frame" to server.');
                 socket.emit('video-frame', frame);
             }
         });
 
         socket.on('robot-command', (cmd) => {
-            alert(`Socket.IO: Received "robot-command" from server: ${cmd}`);
             sendBLECommand(cmd);
         });
 
         socket.on('stop-streaming', () => {
-            alert('Socket.IO: Received "stop-streaming" from server.');
+            console.log('Received stop signal.');
             stopCalibration();
             showScreen('finished');
         });
     }
     
     function stopCalibration() {
-        alert('Stopping calibration...');
         if (stream) {
-            alert('Stopping camera stream.');
             stream.getTracks().forEach(track => track.stop());
             stream = null;
         }
         if (socket) {
-            alert('Disconnecting socket.');
             socket.disconnect();
             socket = null;
         }
         if (countdownInterval) {
-            alert('Clearing countdown interval.');
             clearInterval(countdownInterval);
             countdownInterval = null;
         }
-        alert('Calibration stopped.');
     }
 
     // --- Main Flow ---
     setupButton.addEventListener('click', () => {
-        alert('Setup button clicked.');
         showScreen('countdown');
         let count = 30;
         countdownText.textContent = `Calibrating in ${count}...`;
@@ -228,7 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
             count--;
             countdownText.textContent = `Calibrating in ${count}...`;
             if (count <= 0) {
-                alert('Countdown finished. Starting calibration.');
                 clearInterval(countdownInterval);
                 showScreen('calibrating');
                 startCalibration();
@@ -237,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     function resetToHome() {
-        alert('Resetting to home screen.');
         stopCalibration();
         showScreen('instructions');
         setupButton.disabled = true;
