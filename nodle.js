@@ -408,6 +408,11 @@ let update_tings = [
         info: "Hardware done (kinda)",
         img: "images/hardware.png",
         articleId: "e"
+    },
+    {
+        info: "Software Start",
+        img: "images/simulation.png",
+        articleId: "f"
     }
 ];
 

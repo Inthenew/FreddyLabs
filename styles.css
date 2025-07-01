@@ -217,6 +217,9 @@ body {
   height: clamp(280px, 45vw, 500px);
   aspect-ratio: 1 / 1.5;
   overflow: hidden;
+  border-bottom: none !important;
+  border-right: none !important;
+  border-left: none !important;
 }
 
 .ting-item:hover {
