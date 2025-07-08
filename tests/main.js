@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             await sendBLECommand('%S2:100#', true);
 
                             // Repair #1: Claw never gets in view //
-                            await sendBLECommand('%S3:80#', true);
+                            await sendBLECommand('%S3:70#', true);
 
                             if (alreadyMoved) {
                                 alert("We can't find the claw!!");
@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Might need to be tweaked, untested. If you do, edit the other area where this is done as well. //
             await sendBLECommand('%S1:0#', true);
             await sendBLECommand('%S2:100#', true);
-            await sendBLECommand('%S3:80#', true);
+            await sendBLECommand('%S3:70#', true);
             let coords = await extractCoords();
             let ratio = -.05;
             const pixelXDistance = coords[0] - coords[2];
