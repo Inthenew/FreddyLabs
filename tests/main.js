@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await sendBLECommand('%S2:100#', true);
             await sendBLECommand('%S3:70#', true);
             let coords = await extractCoords();
-            let ratio = -.05;
+            let ratio = -.01;
             const pixelXDistance = coords[0] - coords[2];
             console.log('Initial coordinates:', coords);
             console.log('Initial pixel X distance:', pixelXDistance);
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const initialShoulderROT = currentShoulderROT;
 
             // Heuristic move (mirrors base-axis pattern)
-            let vertRatio = 0.05; // tuned sign so positive gap -> negative deg change
+            let vertRatio = -0.01; // tuned sign so positive gap -> negative deg change
             let vertChange = Math.round(initialVertGap * vertRatio);
 
             if ((currentShoulderROT + vertChange) < 0) {
