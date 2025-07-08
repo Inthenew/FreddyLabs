@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreddyBOT Control</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0/dist/transformers.min.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Add these to your HTML, e.g. in index.html -->
+        <video id="photo-video" width="320" height="240" autoplay style="display: none;"></video>
+        <canvas id="photo-canvas" width="320" height="240" style="display: none;"></canvas>
+        <div id="control-panel" class="screen active">
+            <div class="header">
+                <h1>FreddyBOT Control</h1>
+            </div>
+            <div class="content">
+                <div class="input-group">
+                    <label for="server-ip">Server IP Address (Optional):</label>
+                    <input type="text" id="server-ip" placeholder="e.g., 192.168.1.100:3000" value="localhost:3000">
+                </div>
+
+                <div class="connection-status">
+                    <p>Robot Status: <span id="ble-status">Disconnected</span></p>
+                    <p>Server Status: <span id="socket-status">Disconnected</span></p>
+                </div>
+
+                <button id="connect-ble-button" class="button-primary">Connect to Robot</button>
+                <button id="connect-server-button" class="button-primary">Connect to Server</button>
+
+                <hr>
+
+                <div class="distance-section">
+                    <button id="get-distance-button" class="button-secondary" disabled>Get Distance</button>
+                    <p id="distance-display">Distance: -- mm</p>
+                </div>
+            </div>
+        </div>
+        <script src="main.js"></script>
+</body>
+
+</html>
