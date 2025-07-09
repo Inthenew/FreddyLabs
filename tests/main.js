@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
             function extractCoords(noPrompt) {
                 return new Promise(async (res, rej) => {
                     const foto = await snapPhoto();
-                    
+
                     // Ask for all the data we need //
                     socket.emit('command', prompt2, foto, !!noPrompt);
 
@@ -368,13 +368,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const pixelXDistance = coords[0] - coords[2];
             console.log('Initial coordinates:', coords);
             console.log('Initial pixel X distance:', pixelXDistance);
+            socket.emit('LOG-THIS-PLEASE', `just moved 3 tings. Pixel distance=${pixelXDistance}`)
 
             let currentBaseROT = currentAngles[1];
             const initialBaseROT = currentBaseROT;
             console.log('Current base rotation:', currentBaseROT);
+            socket.emit('LOG-THIS-PLEASE', 'Current base rotation=' + currentBaseROT)
 
             let changeAmount = Math.round(pixelXDistance * ratio);
             console.log('Change amount:', changeAmount);
+            socket.emit('LOG-THIS-PLEASE', 'Change amount=' + changeAmount)
 
             // Make sure it doesn't start by trying to go above 0 (that would be retarted abnd result in no ratio) //
             if ((currentBaseROT + changeAmount) < 0) {
@@ -387,18 +390,22 @@ document.addEventListener('DOMContentLoaded', () => {
             currentAngles[1] = currentBaseROT;
 
             await sendBLECommand(`%S1:${currentBaseROT}#`, true);
+            socket.emit('LOG-THIS-PLEASE', 'Moved arm sideways, now its ' + currentBaseROT);
 
             // SECOND ROUND //
             const newCoords = await extractCoords(true);
             console.log('New coordinates after first adjustment:', newCoords);
+            socket.emit('LOG-THIS-PLEASE', 'NEW CORDS AFTER STIZUF (second round start):' + newCoords);
 
             if (newCoords === 'FAILURE' || !Array.isArray(newCoords) || newCoords.length < 2 || isNaN(newCoords[0])) {
                 alert('Failed to get claw coordinates (second round)!!');
+                socket.emit('LOG-THIS-PLEASE', 'OMG OMG FAIL FAIL FAIL BOZO');
                 return;
             }
 
             const newPixelXDistance = coords[0] - newCoords[0];
             console.log('New pixel X distance:', newPixelXDistance);
+            socket.emit('LOG-THIS-PLEASE', 'new pixel dis ' + newPixelXDistance);
 
             // Calculate how much the claw actually moved in pixels //
             const initialClawX = coords[2];//483
@@ -409,7 +416,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (actualPixelMovement === 0 || actualDegreesChange === 0) {
                 // Not alert cause not that important //
-                console.warn('No measurable movement - aborting refinement');
+                alert('No measurable movement - aborting refinement');
+                socket.emit('LOG-THIS-PLEASE', 'OMG OMG NO MEASURABLE MOVEMENT, HERE INFO ' + actualPixelMovement + ' ' + actualDegreesChange);
                 return;
             }
 
@@ -428,13 +436,15 @@ document.addEventListener('DOMContentLoaded', () => {
             currentBaseROT = Math.max(Math.min(180, currentBaseROT), 0);
             console.log('Corrected base rotation:', currentBaseROT);
             currentAngles[1] = currentBaseROT;
+            socket.emit('LOG-THIS-PLEASE', 'Second round sideways movement result ' + currentBaseROT + '. Pixel gap was ' + remainingPixelGap);
 
             await sendBLECommand(`%S1:${currentBaseROT}#`, true);
-
+            socket.emit('LOG-THIS-PLEASE', 'sent it');
             // VERTICAL MOVEMENT //
 
             // 1. Open gripper //
             await sendBLECommand('%S6:0#', true);
+            socket.emit('LOG-THIS-PLEASE', 'GRIPPER OPEN. VERTICAL MOVEMENT STARTED');
 
             // 2. First movement //
             const initialVertGap = coords[1] - coords[3]; // objectY - clawY
@@ -454,10 +464,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             currentShoulderROT = Math.max(Math.min(180, currentShoulderROT), 0);
             currentAngles[2] = currentShoulderROT;
+            socket.emit('LOG-THIS-PLEASE', `ROUND 1 INFO!! result for s2 is ${currentShoulderROT}. Pixel gap was ${initialVertGap}`);
             await sendBLECommand(`%S2:${currentShoulderROT}#`, true);
-
+            socket.emit('LOG-THIS-PLEASE', 'DID IT');
             // 3. Second movement //
             const newVertCoords = await extractCoords(true);
+            socket.emit('LOG-THIS-PLEASE', 'Extracted new vert coords');
             if (newVertCoords !== 'FAILURE' && Array.isArray(newVertCoords)) {
                 const newClawY = newVertCoords[3] ?? newVertCoords[1]; // clawY after move
                 const actualPixelVertMove = newClawY - coords[3];
@@ -475,15 +487,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     currentShoulderROT = Math.max(Math.min(180, currentShoulderROT), 0);
                     currentAngles[2] = currentShoulderROT;
+                    socket.emit('LOG-THIS-PLEASE', 'ROUND 2 CALCULATED ' + currentShoulderROT + '. PIXEL: ' + remainingVertGap);
                     await sendBLECommand(`%S2:${currentShoulderROT}#`, true);
+                    socket.emit('LOG-THIS-PLEASE', 'sent');
                 }
             }
-            
+
             // Wait a sec //
+            socket.emit('LOG-THIS-PLEASE', 'waiting');
             await new Promise(r => setTimeout(r, 500));
+            socket.emit('LOG-THIS-PLEASE', 'waited');
 
             // Close the gripper //
             await sendBLECommand('%S6:95#', true);
+            socket.emit('LOG-THIS-PLEASE', 'close claw');
         }, 20 * 1000)
     }
 
