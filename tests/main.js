@@ -15,8 +15,8 @@ const prompt2 = "Pick up the black cube please";
 let connectedToServer = false;
 let currentAngles = {
     1: 0,
-    2: 75,
-    3: 90,
+    2: 100,
+    3: 70,
     4: 90,
     5: 90,
     6: 90
