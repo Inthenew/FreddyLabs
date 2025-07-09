@@ -250,6 +250,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+            // Attempt to zoom OUT (use the widest field-of-view) if the device/browser supports
+            // the MediaTrack "zoom" constraint. This slightly increases the visible scene
+            // without affecting resolution.
+            try {
+                const track = stream.getVideoTracks()[0];
+                const capabilities = track.getCapabilities?.();
+                if (capabilities && 'zoom' in capabilities) {
+                    const minZoom = capabilities.zoom.min ?? 1; // 1 is typically the widest
+                    await track.applyConstraints({ advanced: [{ zoom: minZoom }] });
+                    console.log(`Applied hardware zoom level: ${minZoom}`);
+                }
+            } catch (zoomErr) {
+                console.warn('Zoom constraint not supported or failed:', zoomErr);
+            }
+
             video.srcObject = stream;
             video.style.display = 'block';
 
@@ -454,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const initialShoulderROT = currentShoulderROT;
 
             // Heuristic move (mirrors base-axis pattern)
-            let vertRatio = -0.05; // tuned sign so positive gap -> negative deg change
+            let vertRatio = 0.02; // tuned sign so positive gap -> negative deg change
             let vertChange = Math.round(initialVertGap * vertRatio);
 
             if ((currentShoulderROT + vertChange) < 0) {
