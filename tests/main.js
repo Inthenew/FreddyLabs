@@ -14,7 +14,7 @@ requestAnimationFrame(animate);
 const prompt2 = "Pick up the black cube please";
 let connectedToServer = false;
 let currentAngles = {
-    1: 23,
+    1: 0,
     2: 75,
     3: 90,
     4: 90,
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await sendBLECommand('%S2:100#', true);
             await sendBLECommand('%S3:70#', true);
             let coords = await extractCoords();
-            let ratio = -.01;
+            let ratio = -.05;
             const pixelXDistance = coords[0] - coords[2];
             console.log('Initial coordinates:', coords);
             console.log('Initial pixel X distance:', pixelXDistance);
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const initialShoulderROT = currentShoulderROT;
 
             // Heuristic move (mirrors base-axis pattern)
-            let vertRatio = -0.01; // tuned sign so positive gap -> negative deg change
+            let vertRatio = -0.05; // tuned sign so positive gap -> negative deg change
             let vertChange = Math.round(initialVertGap * vertRatio);
 
             if ((currentShoulderROT + vertChange) < 0) {
