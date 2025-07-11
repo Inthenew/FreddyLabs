@@ -379,17 +379,19 @@ document.addEventListener('DOMContentLoaded', () => {
             await sendBLECommand('%S2:100#', true);
             await sendBLECommand('%S3:70#', true);
             let coords = await extractCoords();
-            let ratio = -.15;
             const pixelXDistance = coords[0] - coords[2];
             console.log('Initial coordinates:', coords);
             console.log('Initial pixel X distance:', pixelXDistance);
-            socket.emit('LOG-THIS-PLEASE', `just moved 3 tings. Pixel distance=${pixelXDistance}`)
+            socket.emit('LOG-THIS-PLEASE', `just moved 3 tings. Pixel distance=${pixelXDistance}`);
 
             let currentBaseROT = currentAngles[1];
             const initialBaseROT = currentBaseROT;
             console.log('Current base rotation:', currentBaseROT);
             socket.emit('LOG-THIS-PLEASE', 'Current base rotation=' + currentBaseROT)
 
+            let targetDegreeChange = 4;
+            let ratio = pixelXDistance !== 0 ? targetDegreeChange / pixelXDistance : -.5;
+            
             let changeAmount = Math.round(pixelXDistance * ratio);
             console.log('Change amount:', changeAmount);
             socket.emit('LOG-THIS-PLEASE', 'Change amount=' + changeAmount)
