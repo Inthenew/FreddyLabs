@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalHeight = video.videoHeight;
 
             // Calculate scaled dimensions (50% of original size)
-            const scaleFactor = 0.5;
+            const scaleFactor = 1;
             const outputWidth = Math.round(originalWidth * scaleFactor);
             const outputHeight = Math.round(originalHeight * scaleFactor);
 
@@ -463,8 +463,13 @@ document.addEventListener('DOMContentLoaded', () => {
             await sendBLECommand('%S6:0#', true);
             socket.emit('LOG-THIS-PLEASE', 'GRIPPER OPEN. VERTICAL MOVEMENT STARTED');
 
+
+            socket.emit('LOG-THIS-PLEASE', 'Collecting claw info');
+            const newewnCoords = await extractCoords(true);
+            socket.emit('LOG-THIS-PLEASE', 'Info gotten');
+
             // 2. First movement //
-            const initialVertGap = coords[1] - coords[3]; // objectY - clawY
+            const initialVertGap = coords[1] - newewnCoords[1]; // objectY - clawY
             console.log('Initial vertical pixel gap:', initialVertGap);
 
             let currentShoulderROT = currentAngles[2];
@@ -489,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
             socket.emit('LOG-THIS-PLEASE', 'Extracted new vert coords');
             if (newVertCoords !== 'FAILURE' && Array.isArray(newVertCoords)) {
                 const newClawY = newVertCoords[3] ?? newVertCoords[1]; // clawY after move
-                const actualPixelVertMove = newClawY - coords[3];
+                const actualPixelVertMove = newClawY - newewnCoords[1];
                 const actualShoulderDegChange = currentShoulderROT - initialShoulderROT;
 
                 if (actualPixelVertMove !== 0 && actualShoulderDegChange !== 0) {
