@@ -14,13 +14,70 @@ requestAnimationFrame(animate);
 const prompt2 = "Pick up the black cube please";
 let connectedToServer = false;
 let currentAngles = {
-    1: 0,
-    2: 100,
-    3: 70,
+    1: 23,
+    2: 75,
+    3: 90,
     4: 90,
     5: 90,
     6: 90
 }
+let sttLoaded = false;
+let serverArobot = false;
+let doingRequest = false;
+let stopRequested = false;
+// Speech to text stuff //
+async function init() {
+    const model = await Vosk.createModel('model.zip');
+
+    const recognizer = new model.KaldiRecognizer();
+    recognizer.on("result", (message) => {
+        const text = message.result.text;
+        console.log(`Result: ${text}`);
+
+        // Global stop command – cancel any ongoing request loop
+        if (text.toLowerCase().includes('stop')) {
+            stopRequested = true; // signal the running loop to terminate
+            return;
+        }
+
+        if (serverArobot && !doingRequest) {
+            if (text.includes('freddy') || text.includes('freddie')) {
+                doingRequest = true;
+                window.doCommand(text);
+            }
+        }
+    });
+    recognizer.on("partialresult", (message) => {
+        if (message.result.partial.length) console.log(`Partial result: ${message.result.partial}`);
+    });
+    
+    const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: false,
+        audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            channelCount: 1,
+            sampleRate: 16000
+        },
+    });
+    
+    const audioContext = new AudioContext();
+    const recognizerNode = audioContext.createScriptProcessor(4096, 1, 1)
+    recognizerNode.onaudioprocess = (event) => {
+        try {
+            recognizer.acceptWaveform(event.inputBuffer)
+        } catch (error) {
+            console.error('acceptWaveform failed', error)
+        }
+    }
+    const source = audioContext.createMediaStreamSource(mediaStream);
+    source.connect(recognizerNode);
+    recognizerNode.connect(audioContext.destination);
+    alert('SPEECH TO TEXT MODEL LOADED!!');
+    sttLoaded = true;
+}
+
+window.onload = init;
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Elements ---
@@ -36,10 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- State ---
     let bleCharacteristic = null;
     let socket = null;
-
-    // --- Whisper ASR (Transformers.js) ---
-    let transcriber = null;
-    let whisperReady = false;
 
     const UART_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
     const TARGET_DEVICE_NAME_KEYWORDS = ['HM', 'Freddy', 'HC', 'BLE'];
@@ -125,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
             getDistanceButton.disabled = false;
 
             if (connectedToServer) {
-                startPickUp();
+                serverArobot = true;
             }
 
         } catch (error) {
@@ -180,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             connectedToServer = true;
             if (bleCharacteristic) {
-                startPickUp();
+                serverArobot = true;
             }
         });
 
@@ -284,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalHeight = video.videoHeight;
 
             // Calculate scaled dimensions (50% of original size)
-            const scaleFactor = 1;
+            const scaleFactor = .5;
             const outputWidth = Math.round(originalWidth * scaleFactor);
             const outputHeight = Math.round(originalHeight * scaleFactor);
 
@@ -326,204 +379,85 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.snapPhoto = snapPhoto;
 
-    function startPickUp() {
-        alert('You have 20 seconds to put your phone on the stand!!');
-        setTimeout(async () => {
-            let alreadyMoved = false;
-            function extractCoords(noPrompt) {
-                return new Promise(async (res, rej) => {
-                    const foto = await snapPhoto();
+    window.doCommand = async (goal) => {
+        if (!socket || !socket.connected) {
+            console.error('Not connected to the control server.');
+            doingRequest = false;
+            return;
+        }
 
-                    // Ask for all the data we need //
-                    socket.emit('command', prompt2, foto, !!noPrompt);
-
-                    socket.once('doNext', async (coordX, coordY, cCoords) => {
-                        if (coordY === 'FAILURE') {
-                            alert('There was an issue!!');
-                            res('FAILURE');
-                        } else if (coordY === 'DELAY') {
-                            // Move the claw down!! //
-                            await sendBLECommand('%S1:0#', true);
-
-                            await sendBLECommand('%S2:100#', true);
-
-                            // Repair #1: Claw never gets in view //
-                            await sendBLECommand('%S3:70#', true);
-
-                            if (alreadyMoved) {
-                                alert("We can't find the claw!!");
-                                res('FAILURE');
-                                return;
-                            }
-                            alreadyMoved = true;
-                            const handleAgain = await extractCoords(noPrompt);
-                            res(handleAgain);
-                        } else {
-                            if (noPrompt) cCoords = coordX;
-                            let clawCoords = cCoords.split(',');
-                            const clawCoordX = Number(clawCoords[0]);
-                            const clawCoordY = Number(clawCoords[1]);
-                            // 618 562 257 283 // (Example) //
-                            if (!noPrompt) {
-                                res([coordX, coordY, clawCoordX, clawCoordY]);
-                            } else {
-                                res([clawCoordX, clawCoordY]);
-                            }
-                        }
-                    })
-                })
+        // Helper: parse Gemini response into actionable commands
+        function parseCommands(data) {
+            const cmds = [];
+            if (data.includes('%COMPLETE%')) cmds.push({ command: 'COMPLETE' });
+            const regex = /%(\w+)-"(\d+)"/g;
+            let match;
+            while ((match = regex.exec(data))) {
+                cmds.push({ command: match[1], value: parseInt(match[2], 10) });
             }
+            return cmds;
+        }
 
-            // Might need to be tweaked, untested. If you do, edit the other area where this is done as well. //
-            await sendBLECommand('%S1:0#', true);
-            await sendBLECommand('%S2:100#', true);
-            await sendBLECommand('%S3:70#', true);
-            let coords = await extractCoords();
-            const pixelXDistance = coords[0] - coords[2];
-            console.log('Initial coordinates:', coords);
-            console.log('Initial pixel X distance:', pixelXDistance);
-            socket.emit('LOG-THIS-PLEASE', `just moved 3 tings. Pixel distance=${pixelXDistance}`);
-
-            let currentBaseROT = currentAngles[1];
-            const initialBaseROT = currentBaseROT;
-            console.log('Current base rotation:', currentBaseROT);
-            socket.emit('LOG-THIS-PLEASE', 'Current base rotation=' + currentBaseROT)
-
-            let targetDegreeChange = 4;
-            let ratio = pixelXDistance !== 0 ? targetDegreeChange / pixelXDistance : -.5;
-            
-            let changeAmount = Math.round(pixelXDistance * ratio);
-            console.log('Change amount:', changeAmount);
-            socket.emit('LOG-THIS-PLEASE', 'Change amount=' + changeAmount)
-
-            // Make sure it doesn't start by trying to go above 0 (that would be retarted abnd result in no ratio) //
-            if ((currentBaseROT + changeAmount) < 0) {
-                currentBaseROT -= changeAmount;
-            } else currentBaseROT += changeAmount;
-            currentBaseROT = Math.max(Math.min(180, currentBaseROT), 0);
-            console.log('New base rotation after first adjustment:', currentBaseROT);
-
-            // Update the base rot //
-            currentAngles[1] = currentBaseROT;
-
-            await sendBLECommand(`%S1:${currentBaseROT}#`, true);
-            socket.emit('LOG-THIS-PLEASE', 'Moved arm sideways, now its ' + currentBaseROT);
-
-            // SECOND ROUND //
-            const newCoords = await extractCoords(true);
-            console.log('New coordinates after first adjustment:', newCoords);
-            socket.emit('LOG-THIS-PLEASE', 'NEW CORDS AFTER STIZUF (second round start):' + newCoords);
-
-            if (newCoords === 'FAILURE' || !Array.isArray(newCoords) || newCoords.length < 2 || isNaN(newCoords[0])) {
-                alert('Failed to get claw coordinates (second round)!!');
-                socket.emit('LOG-THIS-PLEASE', 'OMG OMG FAIL FAIL FAIL BOZO');
-                return;
-            }
-
-            const newPixelXDistance = coords[0] - newCoords[0];
-            console.log('New pixel X distance:', newPixelXDistance);
-            socket.emit('LOG-THIS-PLEASE', 'new pixel dis ' + newPixelXDistance);
-
-            // Calculate how much the claw actually moved in pixels //
-            const initialClawX = coords[2];//483
-            const newClawX = newCoords[0];//437
-            const actualPixelMovement = newClawX - initialClawX; //-46
-
-            const actualDegreesChange = currentBaseROT - initialBaseROT; // 3
-
-            if (actualPixelMovement === 0 || actualDegreesChange === 0) {
-                // Not alert cause not that important //
-                alert('No measurable movement - aborting refinement');
-                socket.emit('LOG-THIS-PLEASE', 'OMG OMG NO MEASURABLE MOVEMENT, HERE INFO ' + actualPixelMovement + ' ' + actualDegreesChange);
-                return;
-            }
-
-            // Real (signed) degrees-per-pixel coefficient
-            const degPerPixel = actualDegreesChange / actualPixelMovement;//-0.0652173913
-
-            // Pixels we still have to close (signed)
-            const remainingPixelGap = coords[0] - newClawX;//415 - 437 (-22)
-            console.log('Remaining pixel gap:', remainingPixelGap);
-
-            // How many more servo degrees we need (signed)
-            let requiredDegChange = remainingPixelGap * degPerPixel;//=1.43478261, shoulda been 19
-
-            // Apply *one* mathematically determined correction
-            currentBaseROT += requiredDegChange;
-            currentBaseROT = Math.max(Math.min(180, currentBaseROT), 0);
-            console.log('Corrected base rotation:', currentBaseROT);
-            currentAngles[1] = currentBaseROT;
-            socket.emit('LOG-THIS-PLEASE', 'Second round sideways movement result ' + currentBaseROT + '. Pixel gap was ' + remainingPixelGap);
-
-            await sendBLECommand(`%S1:${currentBaseROT}#`, true);
-            socket.emit('LOG-THIS-PLEASE', 'sent it');
-            // VERTICAL MOVEMENT //
-
-            // 1. Open gripper //
-            await sendBLECommand('%S6:0#', true);
-            socket.emit('LOG-THIS-PLEASE', 'GRIPPER OPEN. VERTICAL MOVEMENT STARTED');
-
-
-            socket.emit('LOG-THIS-PLEASE', 'Collecting claw info');
-            const newewnCoords = await extractCoords(true);
-            socket.emit('LOG-THIS-PLEASE', 'Info gotten');
-
-            // 2. First movement //
-            const initialVertGap = coords[1] - newewnCoords[1]; // objectY - clawY
-            console.log('Initial vertical pixel gap:', initialVertGap);
-
-            let currentShoulderROT = currentAngles[2];
-            const initialShoulderROT = currentShoulderROT;
-
-            // Heuristic move (mirrors base-axis pattern)
-            let vertRatio = 0.05; // tuned sign so positive gap -> negative deg change
-            let vertChange = Math.round(initialVertGap * vertRatio);
-
-            if ((currentShoulderROT + vertChange) < 0) {
-                currentShoulderROT -= vertChange;
+        // Helper: execute a single parsed command via BLE
+        async function executeCommand({ command, value }) {
+            if (['FORWARD', 'BACKWARD', 'LEFT', 'RIGHT'].includes(command)) {
+                // Map command to single letter
+                const commandMap = {
+                    'FORWARD': 'F',
+                    'BACKWARD': 'B', 
+                    'LEFT': 'L',
+                    'RIGHT': 'R'
+                };
+                command = commandMap[command];
+                // Send motion command then wait the requested duration
+                await sendBLECommand(`%${command}#`);
+                await new Promise(r => setTimeout(r, value * 1000));
+                await sendBLECommand('%T#', true);
             } else {
-                currentShoulderROT += vertChange;
-            }
-            currentShoulderROT = Math.max(Math.min(180, currentShoulderROT), 0);
-            currentAngles[2] = currentShoulderROT;
-            socket.emit('LOG-THIS-PLEASE', `ROUND 1 INFO!! result for s2 is ${currentShoulderROT}. Pixel gap was ${initialVertGap}`);
-            await sendBLECommand(`%S2:${currentShoulderROT}#`, true);
-            socket.emit('LOG-THIS-PLEASE', 'DID IT');
-            // 3. Second movement //
-            const newVertCoords = await extractCoords(true);
-            socket.emit('LOG-THIS-PLEASE', 'Extracted new vert coords');
-            if (newVertCoords !== 'FAILURE' && Array.isArray(newVertCoords)) {
-                const newClawY = newVertCoords[3] ?? newVertCoords[1]; // clawY after move
-                const actualPixelVertMove = newClawY - newewnCoords[1];
-                const actualShoulderDegChange = currentShoulderROT - initialShoulderROT;
-
-                if (actualPixelVertMove !== 0 && actualShoulderDegChange !== 0) {
-                    const degPerPixelVert = actualShoulderDegChange / actualPixelVertMove;
-                    const remainingVertGap = coords[1] - newClawY;
-                    let requiredVertDeg = remainingVertGap * degPerPixelVert;
-
-                    if ((currentShoulderROT + requiredVertDeg) < 0) {
-                        currentShoulderROT -= requiredVertDeg;
-                    } else {
-                        currentShoulderROT += requiredVertDeg;
-                    }
-                    currentShoulderROT = Math.max(Math.min(180, currentShoulderROT), 0);
-                    currentAngles[2] = currentShoulderROT;
-                    socket.emit('LOG-THIS-PLEASE', 'ROUND 2 CALCULATED ' + currentShoulderROT + '. PIXEL: ' + remainingVertGap);
-                    await sendBLECommand(`%S2:${currentShoulderROT}#`, true);
-                    socket.emit('LOG-THIS-PLEASE', 'sent');
+                let servoNum;
+                switch (command) {
+                    case 'BASE': servoNum = 1; break;
+                    case 'SHOULDER': servoNum = 2; break;
+                    case 'ELBOW': servoNum = 3; break;
+                    case 'WRIST': servoNum = 4; break;
+                    case 'CLAW': servoNum = 6; break;
+                }
+                if (servoNum) {
+                    await sendBLECommand(`%S${servoNum}:${value}#`, true);
                 }
             }
+        }
 
-            // Wait a sec //
-            socket.emit('LOG-THIS-PLEASE', 'waiting');
-            await new Promise(r => setTimeout(r, 500));
-            socket.emit('LOG-THIS-PLEASE', 'waited');
+        stopRequested = false; // reset stop flag at the beginning of run
 
-            // Close the gripper //
-            await sendBLECommand('%S6:95#', true);
-            socket.emit('LOG-THIS-PLEASE', 'close claw');
-        }, 20 * 1000)
+        try {
+            let completed = false;
+            while (!completed && !stopRequested) {
+                const foto = await snapPhoto();
+                socket.emit('command', goal, foto);
+
+                // Wait for AI response
+                const response = await new Promise(resolve => {
+                    socket.once('response', resolve);
+                });
+
+                console.log('AI response:', response);
+
+                const commands = parseCommands(response);
+                completed = commands.some(c => c.command === 'COMPLETE');
+
+                for (const cmdObj of commands) {
+                    if (cmdObj.command === 'COMPLETE') break;
+                    await executeCommand(cmdObj);
+                    if (stopRequested) break; // user interrupted
+                }
+            }
+        } catch (err) {
+            console.error('doCommand failed:', err);
+        } finally {
+            doingRequest = false;
+            stopRequested = false; // reset for next session
+        }
     }
 
     // Initialize on load
