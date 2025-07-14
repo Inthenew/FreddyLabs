@@ -25,14 +25,18 @@ let sttLoaded = false;
 let serverArobot = false;
 let doingRequest = false;
 let stopRequested = false;
+let did = false;
+console.error = (...args) => alert(args[0]);
 // Speech to text stuff //
 async function init() {
+    if (sttLoaded || did) return;
+    did = true;
+    //alert('DOWNLOADING');
     const model = await Vosk.createModel('model.zip');
 
     const recognizer = new model.KaldiRecognizer();
     recognizer.on("result", (message) => {
         const text = message.result.text;
-        console.log(`Result: ${text}`);
 
         // Global stop command – cancel any ongoing request loop
         if (text.toLowerCase().includes('stop')) {
@@ -50,7 +54,8 @@ async function init() {
     recognizer.on("partialresult", (message) => {
         if (message.result.partial.length) console.log(`Partial result: ${message.result.partial}`);
     });
-    
+
+    //alert('requesting');
     const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: false,
         audio: {
@@ -60,7 +65,7 @@ async function init() {
             sampleRate: 16000
         },
     });
-    
+    //alert('request done');
     const audioContext = new AudioContext();
     const recognizerNode = audioContext.createScriptProcessor(4096, 1, 1)
     recognizerNode.onaudioprocess = (event) => {
@@ -73,11 +78,12 @@ async function init() {
     const source = audioContext.createMediaStreamSource(mediaStream);
     source.connect(recognizerNode);
     recognizerNode.connect(audioContext.destination);
-    alert('SPEECH TO TEXT MODEL LOADED!!');
+    const sttStatus = document.getElementById('stt-status');
+    //alert('SPEECH TO TEXT MODEL LOADED!!');
+    sttStatus.textContent = 'Loaded';
+    sttStatus.style.color = 'green';
     sttLoaded = true;
 }
-
-window.onload = init;
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Elements ---
@@ -85,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const connectBleButton = document.getElementById('connect-ble-button');
     const connectServerButton = document.getElementById('connect-server-button');
     const getDistanceButton = document.getElementById('get-distance-button');
+    const loadSttButton = document.getElementById('load-stt-button');
 
     const bleStatus = document.getElementById('ble-status');
     const socketStatus = document.getElementById('socket-status');
@@ -210,8 +217,12 @@ document.addEventListener('DOMContentLoaded', () => {
         sendBLECommand('%R#');
     });
 
+    loadSttButton.addEventListener('click', () => {
+        if (!did) init();
+    });
+
     // --- Socket.IO Logic ---
-    connectServerButton.addEventListener('click', () => {
+    connectServerButton.addEventListener('click', async () => {
         const serverURL = getServerURL();
         if (!serverURL) {
             alert('Please enter a server address.');
@@ -404,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Map command to single letter
                 const commandMap = {
                     'FORWARD': 'F',
-                    'BACKWARD': 'B', 
+                    'BACKWARD': 'B',
                     'LEFT': 'L',
                     'RIGHT': 'R'
                 };
