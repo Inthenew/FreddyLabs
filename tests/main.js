@@ -26,7 +26,6 @@ let serverArobot = false;
 let doingRequest = false;
 let stopRequested = false;
 let did = false;
-console.error = (...args) => alert(args[0]);
 // Speech to text stuff //
 async function init() {
     if (sttLoaded || did) return;
