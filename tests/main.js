@@ -28,10 +28,11 @@ let stopRequested = false;
 let did = false;
 // Speech to text stuff //
 async function init() {
-    if (sttLoaded || did) return;
+    if (sttLoaded || did || !connectedToServer) return;
     did = true;
+    const serverURL = globalThis.getServerURL();
     //alert('DOWNLOADING');
-    const model = await Vosk.createModel('model.zip');
+    const model = await Vosk.createModel(serverURL + '/model.zip');
 
     const recognizer = new model.KaldiRecognizer();
     recognizer.on("result", (message) => {
@@ -104,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const TARGET_DEVICE_NAME_KEYWORDS = ['HM', 'Freddy', 'HC', 'BLE'];
 
     // --- Helper Functions ---
-    function getServerURL() {
+    const getServerURL = globalThis.getServerURL = () => {
         let serverInput = serverIpInput.value.trim();
         if (!serverInput) return null;
         if (!serverInput.startsWith('http://') && !serverInput.startsWith('https://')) {
