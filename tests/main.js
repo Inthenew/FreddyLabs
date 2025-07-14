@@ -234,7 +234,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         console.log('Connecting to server:', serverURL);
-        socket = io(serverURL);
+        socket = io(serverURL, {
+            extraHeaders: {
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
 
         socket.on('connect', () => {
             console.log('Connected to server.');
