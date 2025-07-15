@@ -41,7 +41,7 @@ async function init() {
         return originalFetch(url, options);
     };
 
-    const model = await Vosk.createModel('https://ucb292f741e561e9e7cbeb61aca0.dl.dropboxusercontent.com/cd/0/get/CteuszlxTze5ocTSG2WRBx5Q-joVAOI8WokXUXK76M_ZPpmtvJo8TszXiw69M_Q_82-qMg2m7R5JWJtICDYFsaZKRN9bPPih-O2UkjqYmNLgCBXUYVtZj2HREoOPQHy9fJ1Hp_oa5RIQpsAtEuhnIh60LPK9aqjdZqztz8R1zvrkjg/file');
+    const model = await Vosk.createModel('https://freddylabs.dev/tests/model.zip');
 
     const recognizer = new model.KaldiRecognizer();
     recognizer.on("result", (message) => {
