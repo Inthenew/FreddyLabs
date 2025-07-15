@@ -41,7 +41,7 @@ async function init() {
         return originalFetch(url, options);
     };
 
-    const model = await Vosk.createModel('https://freddylabs.dev/tests/model2.zip');
+    const model = await Vosk.createModel('https://www.freddylabs.dev/tests/model2.zip');
 
     const recognizer = new model.KaldiRecognizer();
     recognizer.on("result", (message) => {
