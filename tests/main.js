@@ -48,7 +48,7 @@ async function init() {
         const text = message.result.text;
 
         // Global stop command – cancel any ongoing request loop
-        if (text.toLowerCase().includes('stop')) {
+        /*if (text.toLowerCase().includes('stop')) {
             stopRequested = true; // signal the running loop to terminate
             return;
         }
@@ -58,10 +58,26 @@ async function init() {
                 doingRequest = true;
                 window.doCommand(text);
             }
-        }
+        }*/
     });
     recognizer.on("partialresult", (message) => {
-        if (message.result.partial.length) console.log(`Partial result: ${message.result.partial}`);
+        if (message.result.partial.length) {
+            const text = message.result.partial;
+            //console.log(`Partial result: ${message.result.partial}`);
+
+            // Global stop command – cancel any ongoing request loop
+            if (text.toLowerCase().includes('stop')) {
+                stopRequested = true; // signal the running loop to terminate
+                return;
+            }
+
+            if (serverArobot && !doingRequest) {
+                if ((text.includes('freddy') || text.includes('freddie')) && text.includes('start')) {
+                    doingRequest = true;
+                    window.doCommand(text);
+                }
+            }
+        }
     });
 
     //alert('requesting');
