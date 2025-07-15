@@ -26,6 +26,7 @@ let serverArobot = false;
 let doingRequest = false;
 let stopRequested = false;
 let did = false;
+let doneBefore = false;
 // Speech to text stuff //
 async function init() {
     if (sttLoaded || did || !connectedToServer) return;
@@ -61,20 +62,22 @@ async function init() {
         }*/
     });
     recognizer.on("partialresult", (message) => {
-        if (message.result.partial.length) {
+        if (message.result.partial.length && !doneBefore) {
             const text = message.result.partial;
-            //console.log(`Partial result: ${message.result.partial}`);
+            console.log(`Partial result: ${message.result.partial}`);
 
             // Global stop command – cancel any ongoing request loop
             if (text.toLowerCase().includes('stop')) {
                 stopRequested = true; // signal the running loop to terminate
+                window.doCommand2();
                 return;
             }
 
             if (serverArobot && !doingRequest) {
                 if ((text.includes('freddy') || text.includes('freddie')) && text.includes('start')) {
                     doingRequest = true;
-                    window.doCommand(text);
+                    window.doCommand1(text);
+                    doneBefore = true;
                 }
             }
         }
@@ -294,6 +297,14 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Received command from server:', cmd);
             sendBLECommand(cmd);
         });
+
+        socket.on('do-this', goal => {
+            window.doCommand(goal);
+        })
+
+        socket.on('please-stop', () => {
+            stopRequested = true;
+        })
     });
 
     // --- Media Permissions ---
@@ -419,12 +430,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.snapPhoto = snapPhoto;
 
+    window.doCommand1 = (goal) => {
+        socket.emit('voice-command', goal);
+    }
+
+    window.doCommand2 = () => {
+        socket.emit('STOP');
+    }
+
     window.doCommand = async (goal) => {
         if (!socket || !socket.connected) {
             console.error('Not connected to the control server.');
             doingRequest = false;
             return;
         }
+        doingRequest = true;
 
         // Helper: parse Gemini response into actionable commands
         function parseCommands(data) {
