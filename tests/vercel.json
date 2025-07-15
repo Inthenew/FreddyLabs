@@ -1,0 +1,11 @@
+{
+	"headers": [
+	  {
+		"source": "/tests/(.*)",
+		"headers": [
+		  { "key": "Access-Control-Allow-Origin", "value": "https://www.freddylabs.dev" }
+		]
+	  }
+	]
+  }
+  
