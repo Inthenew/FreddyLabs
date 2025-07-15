@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function parseCommands(data) {
             const cmds = [];
             if (data.includes('%COMPLETE%')) cmds.push({ command: 'COMPLETE' });
-            const regex = /%(\w+)-"(\d+(?:\.\d+)?)"/g;
+            const regex = /%(\w+)-"(\d*\.?\d+)"/g;
             let match;
             while ((match = regex.exec(data))) {
                 cmds.push({ command: match[1], value: parseFloat(match[2]) });
