@@ -73,7 +73,7 @@ async function init() {
                 return;
             }
 
-            if (serverArobot && !doingRequest) {
+            if (connectedToServer && !doingRequest) {
                 if ((text.includes('freddy') || text.includes('freddie')) && text.includes('start')) {
                     doingRequest = true;
                     window.doCommand1(text);
@@ -305,6 +305,12 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.on('please-stop', () => {
             stopRequested = true;
         })
+
+        socket.on('allow-command', () => {
+            doingRequest = false;
+            doneBefore = false;
+            stopRequested = false;
+        })
     });
 
     // --- Media Permissions ---
@@ -518,6 +524,8 @@ document.addEventListener('DOMContentLoaded', () => {
             doingRequest = false;
             stopRequested = false; // reset for next session
         }
+
+        socket.emit('DONE-WITH-TASK');
     }
 
     // Initialize on load
