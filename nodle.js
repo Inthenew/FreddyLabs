@@ -413,6 +413,11 @@ let update_tings = [
         info: "Software Start",
         img: "images/simulation.png",
         articleId: "f"
+    },
+    {
+        info: "Update",
+        img: "images/proto5.png",
+        articleId: "g"
     }
 ];
 
