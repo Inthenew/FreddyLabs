@@ -61,7 +61,7 @@ void setupServos() {
   pwm.setPWM(12, 0, servoAngleToPWM(23));    // servo 1 on PCA9685 channel 12
   pwm.setPWM(1, 0, servoAngleToPWM(75));     // servo 2 on PCA9685 channel 1
   pwm.setPWM(2, 0, servoAngleToPWM(90));     // servo 3 on PCA9685 channel 2
-  pwm.setPWM(14, 0, servoAngleToPWM(90));    // servo 4 on PCA9685 channel 14
+  //pwm.setPWM(14, 0, servoAngleToPWM(90));    // servo 4 on PCA9685 channel 14
   pwm.setPWM(4, 0, servoAngleToPWM(90));     // servo 5 on PCA9685 channel 4
   pwm.setPWM(8, 0, servoAngleToPWM(90));     // servo 6 on PCA9685 channel 8
   
@@ -85,15 +85,15 @@ void controlServo(int servoNumber, int angle) {
       pwm.setPWM(2, 0, servoAngleToPWM(angle)); // channel 2 = 3rd servo
       Serial.print("Servo 3 (PCA9685 Ch2) set to: ");
       break;
-    case 4:
+    /*case 4:
       pwm.setPWM(14, 0, servoAngleToPWM(angle)); // channel 14 = 4th servo
       Serial.print("Servo 4 (PCA9685 Ch14) set to: ");
-      break;
-    case 5:
+      break;*/
+    case 4:
       pwm.setPWM(4, 0, servoAngleToPWM(angle)); // channel 4 = 5th servo
       Serial.print("Servo 5 (PCA9685 Ch4) set to: ");
       break;
-    case 6:
+    case 5:
       pwm.setPWM(8, 0, servoAngleToPWM(angle)); // channel 8 = 6th servo
       Serial.print("Servo 6 (PCA9685 Ch8) set to: ");
       break;
@@ -122,7 +122,7 @@ void backwardMotion() {
   digitalWrite(in7, LOW); digitalWrite(in8, HIGH);
 }
 
-void rightMotion() {
+void leftMotion() {
   Serial.println("RIGHT MOTION");
   digitalWrite(in1, HIGH); digitalWrite(in2, LOW);// left, bottom
   digitalWrite(in5, LOW); digitalWrite(in6, HIGH); // right
@@ -130,7 +130,7 @@ void rightMotion() {
   digitalWrite(in7, LOW); digitalWrite(in8, HIGH);
 }
 
-void leftMotion() {
+void rightMotion() {
   Serial.println("LEFT MOTION");
   digitalWrite(in1, LOW); digitalWrite(in2, HIGH);
   digitalWrite(in5, HIGH); digitalWrite(in6, LOW);
