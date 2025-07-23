@@ -184,7 +184,6 @@
 </head>
 
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"></script>
     <h1>W-A-S-D Control for da robot</h1>
     
     <button id="connect">Connect to Robot</button>
@@ -239,7 +238,7 @@
             <div class="servo-label">Servo 4 (Pin 0)</div>
             <div class="servo-buttons">
                 <button class="servo-btn" onclick="adjustServo(5, -5)">←</button>
-                <div class="servo-value" id="servo5-value">90°</div>
+                <div class="servo-value" id="servo4-value">90°</div>
                 <button class="servo-btn" onclick="adjustServo(5, 5)">→</button>
             </div>
         </div>
@@ -247,14 +246,13 @@
             <div class="servo-label">Servo 5 (PCA9685 Ch8)</div>
             <div class="servo-buttons">
                 <button class="servo-btn" onclick="adjustServo(6, -5)">←</button>
-                <div class="servo-value" id="servo6-value">90°</div>
+                <div class="servo-value" id="servo5-value">90°</div>
                 <button class="servo-btn" onclick="adjustServo(6, 5)">→</button>
             </div>
         </div>
     </div>
 
     <script>
-        let socket = io.connect(location.host);
         let bluetoothCharacteristic = null;
 
         let keys = {
@@ -299,7 +297,7 @@
 
         function initializeServoDisplay() {
             // Set initial display values
-            for (let i = 1; i <= 6; i++) {
+            for (let i = 1; i <= 5; i++) {
                 const valueDisplay = document.getElementById(`servo${i}-value`);
                 valueDisplay.textContent = `${servoPositions[i]}°`;
             }
@@ -326,7 +324,6 @@
             if (keys.hasOwnProperty(e.key)) {
                 keys[e.key] = true;
                 updateKeyBlock(e.key, true);
-                socket.emit('key', { key: e.key, value: true });
                 tellTheRobot(e.key, true);
             }
         });
@@ -335,7 +332,6 @@
             if (keys.hasOwnProperty(e.key)) {
                 keys[e.key] = false;
                 updateKeyBlock(e.key, false);
-                socket.emit('key', { key: e.key, value: false });
                 tellTheRobot(e.key, false);
             }
         });
@@ -356,7 +352,6 @@
                     if (!keys[key]) {
                         keys[key] = true;
                         updateKeyBlock(key, true);
-                        socket.emit('key', { key: key, value: true });
                         tellTheRobot(key, true);
                     }
                 });
@@ -367,7 +362,6 @@
                     if (keys[key]) {
                         keys[key] = false;
                         updateKeyBlock(key, false);
-                        socket.emit('key', { key: key, value: false });
                         tellTheRobot(key, false);
                     }
                 });
@@ -378,7 +372,6 @@
                     if (keys[key]) {
                         keys[key] = false;
                         updateKeyBlock(key, false);
-                        socket.emit('key', { key: key, value: false });
                         tellTheRobot(key, false);
                     }
                 });
@@ -389,7 +382,6 @@
                     if (!keys[key]) {
                         keys[key] = true;
                         updateKeyBlock(key, true);
-                        socket.emit('key', { key: key, value: true });
                         tellTheRobot(key, true);
                     }
                 });
@@ -399,7 +391,6 @@
                     if (keys[key]) {
                         keys[key] = false;
                         updateKeyBlock(key, false);
-                        socket.emit('key', { key: key, value: false });
                         tellTheRobot(key, false);
                     }
                 });
@@ -408,7 +399,6 @@
                     if (keys[key]) {
                         keys[key] = false;
                         updateKeyBlock(key, false);
-                        socket.emit('key', { key: key, value: false });
                         tellTheRobot(key, false);
                     }
                 });
@@ -434,12 +424,8 @@
                 const characteristics = await service.getCharacteristics();
                 bluetoothCharacteristic = characteristics[1];
                 
-                socket.emit('type', 'bluetooth');
-                socket.on('signal-c', async signal => {
-                    console.log('sending')
-                    const data = new TextEncoder().encode(signal);
-                    await bluetoothCharacteristic.writeValue(data);
-                })
+                //tellTheRobot('type', 'bluetooth');
+                // The signal-c event listener is removed as per the edit hint.
             } catch (error) {
                 console.error("An error occurred: ", error);
             }
