@@ -4,46 +4,465 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FreddyBOT Control</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+    <title>W-A-S-D Control</title>
+    <style>
+        .key-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .key-block {
+            width: 80px;
+            height: 80px;
+            background-color: #ff4444;
+            border: 2px solid #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+        }
+
+        .key-block.pressed {
+            background-color: #44ff44;
+        }
+
+        .key-label {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            pointer-events: none;
+        }
+
+        .key-status {
+            font-size: 12px;
+            color: #333;
+            pointer-events: none;
+        }
+
+        .servo-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .servo-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 150px;
+        }
+
+        .servo-label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .servo-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .servo-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #007bff;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .servo-btn:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .servo-btn:active {
+            transform: scale(0.95);
+            background-color: #004085;
+        }
+
+        .servo-value {
+            font-size: 14px;
+            color: #666;
+            font-weight: bold;
+        }
+
+        /* Mobile specific styles */
+        @media (max-width: 768px) {
+            .key-block {
+                width: 100px;
+                height: 100px;
+                font-size: 18px;
+            }
+            
+            .key-label {
+                font-size: 28px;
+            }
+            
+            .key-status {
+                font-size: 14px;
+            }
+
+            .servo-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .servo-control {
+                width: 90%;
+                max-width: 200px;
+            }
+
+            .servo-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+
+        #connect {
+            display: block;
+            margin: 20px auto;
+            padding: 15px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        #connect:hover {
+            background-color: #0056b3;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        h2 {
+            text-align: center;
+            color: #444;
+            margin-top: 30px;
+        }
+    </style>
 </head>
 
 <body>
-    <div id="app">
-        <!-- Add these to your HTML, e.g. in index.html -->
-        <video id="photo-video" width="320" height="240" autoplay style="display: none;"></video>
-        <canvas id="photo-canvas" width="320" height="240" style="display: none;"></canvas>
-        <div id="control-panel" class="screen active">
-            <div class="header">
-                <h1>FreddyBOT Control</h1>
-            </div>
-            <div class="content">
-                <div class="input-group">
-                    <label for="server-ip">Server IP Address (Optional):</label>
-                    <input type="text" id="server-ip" placeholder="e.g., 192.168.1.100:3000" value="localhost:3000">
-                </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"></script>
+    <h1>W-A-S-D Control for da robot</h1>
+    
+    <button id="connect">Connect to Robot</button>
 
-                <div class="connection-status">
-                    <p>Robot Status: <span id="ble-status">Disconnected</span></p>
-                    <p>Server Status: <span id="socket-status">Disconnected</span></p>
-                    <p>STT Status: <span id="stt-status">Not Loaded</span></p>
-                </div>
+    <h2>Movement Controls</h2>
+    <div class="key-container">
+        <div class="key-block" id="key-w">
+            <span class="key-label">W</span>
+            <span class="key-status">Pressed: false</span>
+        </div>
+        <div class="key-block" id="key-a">
+            <span class="key-label">A</span>
+            <span class="key-status">Pressed: false</span>
+        </div>
+        <div class="key-block" id="key-s">
+            <span class="key-label">S</span>
+            <span class="key-status">Pressed: false</span>
+        </div>
+        <div class="key-block" id="key-d">
+            <span class="key-label">D</span>
+            <span class="key-status">Pressed: false</span>
+        </div>
+    </div>
 
-                <button id="connect-ble-button" class="button-primary">Connect to Robot</button>
-                <button id="connect-server-button" class="button-primary">Connect to Server</button>
-                <button id="load-stt-button" class="button-primary">Load STT</button>
-
-                <hr>
-
-                <div class="distance-section">
-                    <button id="get-distance-button" class="button-secondary" disabled>Get Distance</button>
-                    <p id="distance-display">Distance: -- mm</p>
-                </div>
+    <h2>Servo Controls</h2>
+    <div class="servo-container">
+        <div class="servo-control">
+            <div class="servo-label">Servo 1 (PCA9685 Ch12)</div>
+            <div class="servo-buttons">
+                <button class="servo-btn" onclick="adjustServo(1, -5)">←</button>
+                <div class="servo-value" id="servo1-value">23°</div>
+                <button class="servo-btn" onclick="adjustServo(1, 5)">→</button>
             </div>
         </div>
-        <script type="application/javascript" src="https://cdn.jsdelivr.net/npm/vosk-browser@0.0.3/dist/vosk.js"></script>
-        <script src="main.js"></script>
+        <div class="servo-control">
+            <div class="servo-label">Servo 2 (PCA9685 Ch1)</div>
+            <div class="servo-buttons">
+                <button class="servo-btn" onclick="adjustServo(2, -5)">←</button>
+                <div class="servo-value" id="servo2-value">75°</div>
+                <button class="servo-btn" onclick="adjustServo(2, 5)">→</button>
+            </div>
+        </div>
+        <div class="servo-control">
+            <div class="servo-label">Servo 3 (PCA9685 Ch2)</div>
+            <div class="servo-buttons">
+                <button class="servo-btn" onclick="adjustServo(3, -5)">←</button>
+                <div class="servo-value" id="servo3-value">90°</div>
+                <button class="servo-btn" onclick="adjustServo(3, 5)">→</button>
+            </div>
+        </div>
+        <div class="servo-control">
+            <div class="servo-label">Servo 4 (Pin 0)</div>
+            <div class="servo-buttons">
+                <button class="servo-btn" onclick="adjustServo(5, -5)">←</button>
+                <div class="servo-value" id="servo5-value">90°</div>
+                <button class="servo-btn" onclick="adjustServo(5, 5)">→</button>
+            </div>
+        </div>
+        <div class="servo-control">
+            <div class="servo-label">Servo 5 (PCA9685 Ch8)</div>
+            <div class="servo-buttons">
+                <button class="servo-btn" onclick="adjustServo(6, -5)">←</button>
+                <div class="servo-value" id="servo6-value">90°</div>
+                <button class="servo-btn" onclick="adjustServo(6, 5)">→</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let socket = io.connect(location.host);
+        let bluetoothCharacteristic = null;
+
+        let keys = {
+            w: false,
+            s: false,
+            a: false,
+            d: false,
+        }
+
+        function updateKeyBlock(key, pressed) {
+            const keyBlock = document.getElementById(`key-${key}`);
+            const keyStatus = keyBlock.querySelector('.key-status');
+            if (pressed) {
+                keyBlock.classList.add('pressed');
+                keyStatus.textContent = 'Pressed: true';
+            } else {
+                keyBlock.classList.remove('pressed');
+                keyStatus.textContent = 'Pressed: false';
+            }
+        }
+
+        // Servo current positions (starting values)
+        let servoPositions = {
+            1: 23,
+            2: 75,
+            3: 90,
+            4: 90,
+            5: 90
+        };
+
+        function adjustServo(servoNumber, adjustment) {
+            // Update the position with bounds checking
+            servoPositions[servoNumber] = Math.max(0, Math.min(180, servoPositions[servoNumber] + adjustment));
+            
+            // Update the display
+            const valueDisplay = document.getElementById(`servo${servoNumber}-value`);
+            valueDisplay.textContent = `${servoPositions[servoNumber]}°`;
+            
+            // Send command to robot
+            sendServoCommand(servoNumber, servoPositions[servoNumber]);
+        }
+
+        function initializeServoDisplay() {
+            // Set initial display values
+            for (let i = 1; i <= 6; i++) {
+                const valueDisplay = document.getElementById(`servo${i}-value`);
+                valueDisplay.textContent = `${servoPositions[i]}°`;
+            }
+        }
+
+        function sendServoCommand(servoNumber, angle) {
+            if (!bluetoothCharacteristic) {
+                console.log('Not connected to robot - cannot send servo command');
+                return;
+            }
+            
+            // Format: %S1:90# for servo 1 to 90 degrees
+            const message = `%S${servoNumber}:${angle}#`;
+            try {
+                const data = new TextEncoder().encode(message);
+                bluetoothCharacteristic.writeValue(data);
+                console.log(`Sent servo command: ${message}`);
+            } catch (error) {
+                console.error('Failed to send servo command:', error);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.key)) {
+                keys[e.key] = true;
+                updateKeyBlock(e.key, true);
+                socket.emit('key', { key: e.key, value: true });
+                tellTheRobot(e.key, true);
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.key)) {
+                keys[e.key] = false;
+                updateKeyBlock(e.key, false);
+                socket.emit('key', { key: e.key, value: false });
+                tellTheRobot(e.key, false);
+            }
+        });
+        
+        // Add touch support for mobile
+        function setupMobileControls() {
+            const keyBlocks = document.querySelectorAll('.key-block');
+            
+            keyBlocks.forEach(block => {
+                const key = block.id.split('-')[1]; // Extract key from id like 'key-w'
+                
+                // Prevent context menu and text selection
+                block.addEventListener('contextmenu', (e) => e.preventDefault());
+                
+                // Touch start
+                block.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (!keys[key]) {
+                        keys[key] = true;
+                        updateKeyBlock(key, true);
+                        socket.emit('key', { key: key, value: true });
+                        tellTheRobot(key, true);
+                    }
+                });
+                
+                // Touch end
+                block.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    if (keys[key]) {
+                        keys[key] = false;
+                        updateKeyBlock(key, false);
+                        socket.emit('key', { key: key, value: false });
+                        tellTheRobot(key, false);
+                    }
+                });
+                
+                // Touch cancel (when finger leaves the element)
+                block.addEventListener('touchcancel', (e) => {
+                    e.preventDefault();
+                    if (keys[key]) {
+                        keys[key] = false;
+                        updateKeyBlock(key, false);
+                        socket.emit('key', { key: key, value: false });
+                        tellTheRobot(key, false);
+                    }
+                });
+                
+                // Mouse events for desktop (click and hold)
+                block.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    if (!keys[key]) {
+                        keys[key] = true;
+                        updateKeyBlock(key, true);
+                        socket.emit('key', { key: key, value: true });
+                        tellTheRobot(key, true);
+                    }
+                });
+                
+                block.addEventListener('mouseup', (e) => {
+                    e.preventDefault();
+                    if (keys[key]) {
+                        keys[key] = false;
+                        updateKeyBlock(key, false);
+                        socket.emit('key', { key: key, value: false });
+                        tellTheRobot(key, false);
+                    }
+                });
+                
+                block.addEventListener('mouseleave', (e) => {
+                    if (keys[key]) {
+                        keys[key] = false;
+                        updateKeyBlock(key, false);
+                        socket.emit('key', { key: key, value: false });
+                        tellTheRobot(key, false);
+                    }
+                });
+            });
+        }
+        
+        // Initialize mobile controls and servo controls when page loads
+        setupMobileControls();
+        initializeServoDisplay();
+
+        document.getElementById('connect').addEventListener('click', async () => {
+            if (!navigator.bluetooth) {
+                alert("Web Bluetooth API is not available in this browser!");
+                return;
+            }
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: false,
+                    filters: [{ services: ['0000ffe0-0000-1000-8000-00805f9b34fb'] }]
+                });
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                const characteristics = await service.getCharacteristics();
+                bluetoothCharacteristic = characteristics[1];
+                
+                socket.emit('type', 'bluetooth');
+                socket.on('signal-c', async signal => {
+                    console.log('sending')
+                    const data = new TextEncoder().encode(signal);
+                    await bluetoothCharacteristic.writeValue(data);
+                })
+            } catch (error) {
+                console.error("An error occurred: ", error);
+            }
+        });
+        
+        function tellTheRobot(key, value) {
+            if (!bluetoothCharacteristic) {
+                console.log('Not connected to robot - cannot send command');
+                return;
+            }
+            
+            // Send both press and release commands
+            const command = value ? '1' : '0';
+            const message = `%${key.toUpperCase()}${command}#`;
+            try {
+                const data = new TextEncoder().encode(message);
+                bluetoothCharacteristic.writeValue(data);
+                console.log(`Sent to robot: ${message}`);
+            } catch (error) {
+                console.error('Failed to send data:', error);
+            }
+        }
+    </script>
 </body>
 
 </html>
