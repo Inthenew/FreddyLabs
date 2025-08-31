@@ -1,0 +1,37 @@
+import * as CANNON from 'cannon';
+import { Vehicle } from './Vehicle';
+import { IControllable } from '../interfaces/IControllable';
+import { EntityType } from '../enums/EntityType';
+export declare class Boat extends Vehicle implements IControllable {
+    entityType: EntityType;
+    drive: string;
+    isBoat: boolean;
+    private _speed;
+    get speed(): number;
+    forwardSpeed: number;
+    reverseSpeed: number;
+    accelerationIncrement: number;
+    turnSpeed: number;
+    buoyancyCoefficient: number;
+    alignmentStrength: number;
+    shiftTime: number;
+    private steeringWheel;
+    private steeringSimulator;
+    private gear;
+    private shiftTimer;
+    private characterWantsToExit;
+    submersion: number;
+    amount: number;
+    constructor(gltf: any);
+    updateWheelProps(property: any, value: any): void;
+    updateCarSpeed(speed: number): void;
+    noDirectionPressed(): boolean;
+    update(timeStep: number): void;
+    shiftUp(): void;
+    shiftDown(): void;
+    private goForward;
+    physicsPreStep(body: CANNON.Body): void;
+    onInputChange(): void;
+    inputReceiverInit(): void;
+    readCarData(gltf: any): void;
+}
