@@ -342,7 +342,65 @@
     /* No need to set image height or font-size here, clamp handles it */
   }
 
+
+
+
+
+:root {
+  --ting-button-scale: .75;
+}
+
+/* Good global helpers */
+* { box-sizing: border-box; }
+
+/* Make buttons look like big tiles, consistently */
+.ting-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: 'FreddyFont', cursive, sans-serif;
+  font-size: clamp(14px, 4vw, 20px);
+  line-height: 1.2;
+
+  /* Explicit, responsive size, scaled by variable */
+  width: calc(clamp(180px, 45vw, 260px) * var(--ting-button-scale));
+  height: calc(clamp(120px, 35vw, 180px) * var(--ting-button-scale));
+
+  padding: 0;                 /* height/width control the size now */
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.1);
+  background: #e0e0e0;        /* gray background */
+  color: #222;                /* dark text for contrast */
+  box-shadow: 0 2px 10px rgba(0,0,0,.1);
+  flex: 0 0 auto;             /* don’t let flexbox squish them */
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.ting-button:hover, .ting-button:focus {
+  background: #d1d1d1;
+  color: #111;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.13);
+}
+
+
+/* Optional: larger tap targets on very small screens */
+@media (max-width: 600px) {
   .ting-button {
-    padding: 40px 31px;
-    cursor: pointer;
+    width: calc(clamp(200px, 60vw, 260px) * var(--ting-button-scale));
+    height: calc(clamp(140px, 40vw, 200px) * var(--ting-button-scale));
   }
+}
+
+/* If you like the scroller behavior, keep this */
+.ting-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 0 10px 15px 10px;
+  scroll-behavior: smooth;
+  flex-wrap: nowrap; /* critical so items don’t wrap and shrink */
+}
