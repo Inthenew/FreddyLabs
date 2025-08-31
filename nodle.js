@@ -2,6 +2,7 @@ let idToUrl = {
     w: '/w',
     chat4: '/secret/chat4',
     eagler: '/secret/eagler23',
+    sketchbook2: '/sketchbook/index.html',
     freddybot: '/olds/freddybot.html',
     "street-slickers": '/olds/street_slickers.html',
     "pixel-quest": '/olds/pixel_quest.html',
