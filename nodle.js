@@ -9,6 +9,7 @@ let idToUrl = {
     buildabot: '/olds/buildabot.html',
     astraquest: '/olds/astraquest.html',
     earth: '/olds/earth.html',
+    earth2: '/current/earth.html',
     boats: '/olds/boats.html',
     modelio: '/olds/modelio.html',
     ipcamera: '/olds/ipcamera.html',
