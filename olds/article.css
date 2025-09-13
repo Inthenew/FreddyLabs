@@ -150,6 +150,13 @@
     height: auto;
 }
 
+#earth2 {
+
+    width: min(443px, 50vw);
+    aspect-ratio: 811 / 507;
+    height: auto;
+}
+
 #goals {
     width: min(500px, 50vw);
     aspect-ratio: 253 / 507;
