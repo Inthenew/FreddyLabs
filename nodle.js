@@ -6,6 +6,7 @@ let idToUrl = {
     freddybot: '/olds/freddybot.html',
     "street-slickers": '/olds/street_slickers.html',
     "pixel-quest": '/olds/pixel_quest.html',
+    project: '/current/project.html',
     buildabot: '/olds/buildabot.html',
     astraquest: '/olds/astraquest.html',
     earth: '/olds/earth.html',
