@@ -1,2 +1,2 @@
-# FreddyLabs
+# Freddy Labs
 My website
