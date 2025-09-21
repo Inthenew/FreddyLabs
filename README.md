@@ -1,2 +1,2 @@
-# FreddyBOT
-Website for FreddyBOT
+# FreddyLabs
+My website
